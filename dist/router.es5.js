@@ -425,7 +425,7 @@ function runCanActivateHookStepFactory($injector) {
   return function runCanActivateHook(instruction) {
     return instruction.router.traverseInstruction(instruction, function(instruction) {
       var controllerConstructor = instruction.controllerConstructor;
-      return !controllerConstructor.canActivate || invoke(controllerConstructor.canActivate, null, instruction);
+      return !controllerConstructor.canActivate || invoke(controllerConstructor.canActivate, controllerConstructor, instruction);
     });
   }
 }
