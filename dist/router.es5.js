@@ -184,6 +184,21 @@ function ngOutletDirective($animate, $injector, $q, $router, $componentMapper, $
         return true;
       },
       activate: function(instruction) {
+        if (!instruction) {
+          newScope = scope.$new();
+          var clone = $transclude(newScope, function(clone) {
+            $animate.enter(clone, null, currentElement || $element);
+            cleanupLastView();
+          });
+
+          currentController = null;
+          currentElement = clone;
+          currentScope = newScope;
+          previousInstruction = null;
+
+          return $q.when(true);
+        }
+
         var nextInstruction = serializeInstruction(instruction);
         if (nextInstruction === previousInstruction) {
           return;
