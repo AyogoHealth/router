@@ -738,10 +738,14 @@ var Router = function Router(grammar, pipeline, parent, name) {
       instruction.router = this;
       return this.pipeline.process(instruction).then((function() {
         return $__0._finishNavigating();
-      }), (function() {
-        return $__0._finishNavigating();
       })).then((function() {
         return instruction.canonicalUrl;
+      })).catch((function() {
+        //This fixes the router doing bad things when the route change
+        //is rejected for whatever reason.
+        //It will no longer try to do a location.path to that url.
+        $__0._finishNavigating();
+        return false;
       }));
     },
     _startNavigating: function() {
@@ -1503,6 +1507,11 @@ var Grammar = function Grammar() {
         forEach(lastHandler.components, (function(componentName, outletName) {
           instruction.outlets[outletName] = $__0.recognize(childUrl, componentName);
         }));
+        if(!instruction.outlets[Object.keys(instruction.outlets)[0]]) {
+          //We have a 404 on a child route! redirect to the default route.
+          console.warn("Could not find route for "+url);
+          return $__0.recognize(componentRecognizer.rewrites.default);
+        }
         instruction.canonicalUrl += instruction.outlets[Object.keys(instruction.outlets)[0]].canonicalUrl;
       } else {
         instruction.canonicalUrl = lastHandler.rewroteUrl;
@@ -1581,6 +1590,12 @@ var CanonicalRecognizer = function CanonicalRecognizer(name) {
         this.rewrites[mapping.path] = mapping.redirectTo;
         return;
       }
+      // Setup a default mapping for what to do with routes not found.
+      // If a route is not found for whatever reason, it will redirect to this default route
+      // otherwise it will just output a warning and do nothing.
+      if (mapping.default) {
+       this.rewrites.default = mapping.path;
+      }
       if (mapping.component) {
         if (mapping.components) {
           throw new Error('A route config should have either a "component" or "components" property, but not both.');
@@ -1618,7 +1633,13 @@ var CanonicalRecognizer = function CanonicalRecognizer(name) {
     recognize: function(url) {
       var canonicalUrl = this.getCanonicalUrl(url);
       var context = this.recognizer.recognize(canonicalUrl);
-      if (context) {
+
+      //If we are handling a route and the route handler is dynamic and default, then we have a 404.
+      //redirect to the default route.
+      if (context && context[0].isDynamic && context[0].handler.default && context[0].handler.rewroteUrl !== '/') {
+        console.warn("Could not find route for "+url);
+        return this.recognize(this.rewrites.default);
+      } else if (context) {
         context[0].handler.rewroteUrl = canonicalUrl;
       }
       return context;
