@@ -1486,6 +1486,9 @@ var Grammar = function Grammar() {
       if (typeof url === 'undefined') {
         return;
       }
+      if (url.split('?')[0].indexOf(':') !== -1) {
+        return;
+      }
       var componentRecognizer = this.rules[componentName];
       if (!componentRecognizer) {
         return;
