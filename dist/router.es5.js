@@ -1567,9 +1567,7 @@ var CanonicalRecognizer = function CanonicalRecognizer(name) {
       }
     },
     getCanonicalUrl: function(url) {
-      if (url[0] === '.') {
-        url = url.substr(1);
-      } else if (url[0] === '#') {
+      if (url[0] === '.' || url[0] === '#') {
         url = url.substr(1);
       }
       if (url === '' || url[0] !== '/') {
